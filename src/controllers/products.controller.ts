@@ -1,10 +1,17 @@
 import { z } from "zod";
+import { knex } from "@/database/knex";
 import { NextFunction, Request, Response } from "express";
 
 class ProductsControllers {
   async index(request: Request, response: Response, next: NextFunction) {
     try {
-      return response.json({ message: "okl" });
+      const { name } = request.query;
+      const products = await knex("products")
+        .select()
+        .whereLike("name", `%${name ?? ""}%`)
+        .orderBy("name");
+
+      return response.json(products);
     } catch (error) {
       next(error);
     }
@@ -19,9 +26,11 @@ class ProductsControllers {
           .gt(0, { message: "value must be greater than 0 and" }),
       });
 
-      const { name, price } = bodySchema.parse(request.body)
+      const { name, price } = bodySchema.parse(request.body);
 
-      return response.status(201).json({ name, price });
+      await knex<ProductRepository>("products").insert({ name, price });
+
+      return response.status(201).json();
     } catch (error) {
       next(error);
     }
