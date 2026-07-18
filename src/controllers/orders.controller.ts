@@ -1,5 +1,5 @@
-import knex from "knex";
 import { z } from "zod";
+import { knex } from "@/database/knex";
 import { AppError } from "@/utils/App-error";
 import { Request, Response, NextFunction } from "express";
 
@@ -16,7 +16,7 @@ class OrdersController {
         request.body,
       );
 
-      const session = await knex<TableSessionsRepository>("tables-sessions")
+      const session = await knex<TableSessionsRepository>("tables_sessions")
         .where({ id: table_session_id })
         .first();
 
@@ -35,8 +35,14 @@ class OrdersController {
       if (!product) {
         throw new AppError("product not found");
       }
+      await knex<OrderRepository>("orders").insert({
+        table_session_id,
+        product_id,
+        quantity,
+        price: product.price,
+      })
 
-      return response.status(201).json(product);
+      return response.status(201).json();
     } catch (error) {
       next(error);
     }
